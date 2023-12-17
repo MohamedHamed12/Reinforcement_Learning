@@ -135,3 +135,41 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
 
+        predecessors = self.computePredecessors()
+        priorityQueue  = util.PriorityQueue()
+        for state in self.mdp.getStates():
+            if self.mdp.isTerminal(state): continue
+            maxQ = self.computeMaxQValue(state)
+            diff = abs(self.values[state] - maxQ)
+            priorityQueue.push(state, -diff)
+
+        for _ in range(self.iterations):
+            if priorityQueue.isEmpty(): break
+            state = priorityQueue.pop()
+            if  self.mdp.isTerminal(state): continue
+            maxQ = self.computeMaxQValue(state)
+            self.values[state] = maxQ
+            for predecessor in predecessors.get(state, set()):
+                maxQ = self.computeMaxQValue(predecessor)
+                diff = abs(self.values[predecessor] - maxQ)
+                if diff > self.theta:
+                    priorityQueue.update(predecessor, -diff)
+
+
+        
+    def computeMaxQValue(self, state):
+        return max([self.computeQValueFromValues(state, action) for action in self.mdp.getPossibleActions(state)])
+
+    def computePredecessors(self):
+        predecessors = {}
+        for state in self.mdp.getStates():
+            if self.mdp.isTerminal(state): continue
+            for action in self.mdp.getPossibleActions(state):
+                for nextState, T in self.mdp.getTransitionStatesAndProbs(state, action):
+                    if T == 0: continue
+                    if nextState in predecessors:
+                        predecessors[nextState].add(state)
+                    else:
+                        predecessors[nextState] = {state}
+        return predecessors
+        
